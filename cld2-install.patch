@@ -1,0 +1,53 @@
+--- cld2-b56fa78a2fe44ac2851bae5bf4f4693a0644da7b/install.sh.orig	2026-07-16 06:15:15.409443251 +0200
++++ cld2-b56fa78a2fe44ac2851bae5bf4f4693a0644da7b/install.sh	2026-07-16 06:28:23.918514864 +0200
+@@ -8,6 +8,9 @@ while [ $# -gt 0 ]; do
+     --prefix=*)
+       PREFIX="${1#*=}"
+       ;;
++    --libdir=*)
++      LIBDIR="${1#*=}"
++      ;;
+     *)
+       printf "Unknown argument: $1\n"
+       printf "Allowed arguments:\n"
+@@ -19,22 +22,25 @@ done
+ if [ "x$PREFIX" = "x" ]; then
+     PREFIX=/usr/local/cyruslibs
+ fi
++if [ "x$LIBDIR" = "x" ]; then
++    LIBDIR=${PREFIX}/lib
++fi
+ echo "Using $PREFIX as installation directory"
+ 
+ CLD2_INCLUDE_BASE=$PREFIX/include
+ CLD2_INCLUDE_PATH=$CLD2_INCLUDE_BASE/cld2
+-CLD2_LIB_PATH=$PREFIX/lib
++CLD2_LIB_PATH=$LIBDIR
+ CLD2_PKGCONFIG_PATH=$CLD2_LIB_PATH/pkgconfig
+ 
+ echo "Installing headers to $CLD2_INCLUDE_PATH"
+-mkdir -p $CLD2_INCLUDE_PATH/public
+-mkdir -p $CLD2_INCLUDE_PATH/internal
+-cp public/*.h $CLD2_INCLUDE_PATH/public
+-cp internal/integral_types.h internal/lang_script.h internal/generated_language.h internal/generated_ulscript.h $CLD2_INCLUDE_PATH/internal
++mkdir -p $DESTDIR$CLD2_INCLUDE_PATH/public
++mkdir -p $DESTDIR$CLD2_INCLUDE_PATH/internal
++cp -p public/*.h $DESTDIR$CLD2_INCLUDE_PATH/public
++cp -p internal/integral_types.h internal/lang_script.h internal/generated_language.h internal/generated_ulscript.h $DESTDIR$CLD2_INCLUDE_PATH/internal
+ 
+ echo "Installing libraries to $CLD2_LIB_PATH (you probably want to run ldconfig)"
+-mkdir -p $CLD2_LIB_PATH
+-cp internal/libcld2_full.so $CLD2_LIB_PATH
++mkdir -p $DESTDIR$CLD2_LIB_PATH
++cp -p internal/libcld2.so internal/libcld2_full.so $DESTDIR$CLD2_LIB_PATH
+ 
+ echo "Installing pkg-config configuration to $CLD2_PKGCONFIG_PATH"
+ cat << EOF > cld2.pc
+@@ -48,5 +54,5 @@ Version: 2
+ Libs: -L$CLD2_LIB_PATH -lcld2_full
+ Cflags: -I$CLD2_INCLUDE_BASE
+ EOF
+-mkdir -p $CLD2_PKGCONFIG_PATH
+-cp cld2.pc $CLD2_PKGCONFIG_PATH
++mkdir -p $DESTDIR$CLD2_PKGCONFIG_PATH
++cp -p cld2.pc $DESTDIR$CLD2_PKGCONFIG_PATH

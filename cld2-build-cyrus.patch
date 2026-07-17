@@ -1,0 +1,149 @@
+From e8318941ac320ab8c019dfa52b0401ec3d3bccb2 Mon Sep 17 00:00:00 2001
+From: Robert Stepanek <rsto@paranoia.at>
+Date: Wed, 20 Feb 2019 11:33:04 +0100
+Subject: [PATCH] Add build scripts and adapt public headers for use outside
+ build path
+
+---
+ build.sh                  | 14 +++++++++++
+ install.sh                | 50 +++++++++++++++++++++++++++++++++++++++
+ public/compact_lang_det.h |  4 ++--
+ 3 files changed, 66 insertions(+), 2 deletions(-)
+ create mode 100755 build.sh
+ create mode 100755 install.sh
+
+diff --git a/build.sh b/build.sh
+new file mode 100755
+index 0000000..0548805
+--- /dev/null
++++ b/build.sh
+@@ -0,0 +1,14 @@
++#!/bin/sh
++
++set -e
++
++echo "Cleaning build artefacts"
++rm -f public/cld2
++ln -s ../internal public/cld2
++cd internal
++./clean.sh
++
++echo -n "Running build script "
++CPPFLAGS="-std=c++98" ./compile_libs.sh
++cd ..
++rm public/cld2
+diff --git a/install.sh b/install.sh
+new file mode 100755
+index 0000000..75f9ff4
+--- /dev/null
++++ b/install.sh
+@@ -0,0 +1,50 @@
++#!/bin/sh
++
++set -e
++
++# Parse command line options
++while [ $# -gt 0 ]; do
++  case "$1" in
++    --prefix=*)
++      PREFIX="${1#*=}"
++      ;;
++    *)
++      printf "Unknown argument: $1\n"
++      printf "Allowed arguments:\n"
++      printf "\t--prefix=DIR   install CLD2 to directory DIR\n"
++      exit 1
++  esac
++  shift
++done
++if [ "x$PREFIX" = "x" ]; then
++    PREFIX=/usr/local/cyruslibs
++fi
++echo "Using $PREFIX as installation directory"
++
++CLD2_INCLUDE_BASE=$PREFIX/include
++CLD2_INCLUDE_PATH=$CLD2_INCLUDE_BASE/cld2
++CLD2_LIB_PATH=$PREFIX/lib
++CLD2_PKGCONFIG_PATH=$CLD2_LIB_PATH/pkgconfig
++
++echo "Installing headers to $CLD2_INCLUDE_PATH"
++mkdir -p $CLD2_INCLUDE_PATH
++cp public/*.h internal/integral_types.h internal/lang_script.h internal/generated_language.h internal/generated_ulscript.h $CLD2_INCLUDE_PATH
++
++echo "Installing libraries to $CLD2_LIB_PATH (you probably want to run ldconfig)"
++mkdir -p $CLD2_LIB_PATH
++cp internal/libcld2_full.so $CLD2_LIB_PATH
++
++echo "Installing pkg-config configuration to $CLD2_PKGCONFIG_PATH"
++cat << EOF > cld2.pc
++libdir=$CLD2_LIB_PATH
++includedir=$CLD2_INCLUDE_PATH
++
++Name: cld2
++Description: Compact Language Detector 2
++URL: https://github.com/CLD2Owners/cld2
++Version: 2
++Libs: -L$CLD2_LIB_PATH -lcld2_full
++Cflags: -I$CLD2_INCLUDE_BASE
++EOF
++mkdir -p $CLD2_PKGCONFIG_PATH
++cp cld2.pc $CLD2_PKGCONFIG_PATH
+diff --git a/public/compact_lang_det.h b/public/compact_lang_det.h
+index 4a6f366..a1d0da9 100644
+--- a/public/compact_lang_det.h
++++ b/public/compact_lang_det.h
+@@ -64,8 +64,8 @@
+ 
+ #include <stdint.h>
+ #include <vector>
+-#include "../internal/integral_types.h"   // For uint8 etc.
+-#include "../internal/lang_script.h"      // For Language
++#include "cld2/integral_types.h"   // For uint8 etc.
++#include "cld2/lang_script.h"      // For Language
+ 
+ namespace CLD2 {
+ 
+From 074b451c85dc6a97930273147695abb735a1626a Mon Sep 17 00:00:00 2001
+From: Robert Stepanek <rsto@paranoia.at>
+Date: Wed, 5 Aug 2020 17:22:42 +0200
+Subject: [PATCH] Revert header directory structure to original layout
+
+CLD2 packages on a couple of Linux distributions use the
+original layout, and we want to be compatible with them.
+---
+ install.sh                | 6 ++++--
+ public/compact_lang_det.h | 4 ++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/install.sh b/install.sh
+index 75f9ff4..ca23361 100755
+--- a/install.sh
++++ b/install.sh
+@@ -27,8 +27,10 @@ CLD2_LIB_PATH=$PREFIX/lib
+ CLD2_PKGCONFIG_PATH=$CLD2_LIB_PATH/pkgconfig
+ 
+ echo "Installing headers to $CLD2_INCLUDE_PATH"
+-mkdir -p $CLD2_INCLUDE_PATH
+-cp public/*.h internal/integral_types.h internal/lang_script.h internal/generated_language.h internal/generated_ulscript.h $CLD2_INCLUDE_PATH
++mkdir -p $CLD2_INCLUDE_PATH/public
++mkdir -p $CLD2_INCLUDE_PATH/internal
++cp public/*.h $CLD2_INCLUDE_PATH/public
++cp internal/integral_types.h internal/lang_script.h internal/generated_language.h internal/generated_ulscript.h $CLD2_INCLUDE_PATH/internal
+ 
+ echo "Installing libraries to $CLD2_LIB_PATH (you probably want to run ldconfig)"
+ mkdir -p $CLD2_LIB_PATH
+diff --git a/public/compact_lang_det.h b/public/compact_lang_det.h
+index a1d0da9..4a6f366 100644
+--- a/public/compact_lang_det.h
++++ b/public/compact_lang_det.h
+@@ -64,8 +64,8 @@
+ 
+ #include <stdint.h>
+ #include <vector>
+-#include "cld2/integral_types.h"   // For uint8 etc.
+-#include "cld2/lang_script.h"      // For Language
++#include "../internal/integral_types.h"   // For uint8 etc.
++#include "../internal/lang_script.h"      // For Language
+ 
+ namespace CLD2 {
+ 
