@@ -4,7 +4,7 @@ Name:		cld2
 Version:	0
 %define	gitref	b56fa78a2fe44ac2851bae5bf4f4693a0644da7b
 %define	snap	20150821
-%define	rel	1
+%define	rel	2
 Release:	0.%{snap}.%{rel}
 License:	Apache v2.0
 Group:		Libraries
@@ -48,6 +48,7 @@ cd internal
 CFLAGS="%{rpmcflags}" \
 CPPFLAGS="%{rpmcppflags}" \
 CXXFLAGS="%{rpmcxxflags} -std=c++98" \
+LDFLAGS="%{rpmldflags}" \
 ./compile_libs.sh
 
 %install
